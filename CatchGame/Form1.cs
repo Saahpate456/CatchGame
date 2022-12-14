@@ -38,9 +38,29 @@ namespace CatchGame
 
         int groundHeight = 50;
 
+        string gameState = "waiting";
+
         public Form1()
         {
             InitializeComponent();
+        }
+
+        public void GameSetup()
+        {
+            gameState = "running";
+
+            titleLabel.Text = "";
+            subtitleLabel.Text = "";
+
+            gameLoop.Enabled = true;
+            time = 500;
+            score = 0;
+
+            hero.X = 280;
+
+            balls.Clear();
+            ballSpeeds.Clear();
+            ballColours.Clear();
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -52,6 +72,18 @@ namespace CatchGame
                     break;
                 case Keys.Right:
                     rightDown = true;
+                    break;
+                case Keys.Space:
+                    if (gameState == "waiting" || gameState == "over")
+                    {
+                        GameSetup();
+                    }
+                    break;
+                case Keys.Escape:
+                    if (gameState == "waiting" || gameState == "over")
+                    {
+                        this.Close();
+                    }
                     break;
             }
 
@@ -157,6 +189,7 @@ namespace CatchGame
             if (time <= 0)
             {
                 gameLoop.Enabled = false;
+                gameState = "over";
             }
 
             Refresh();
@@ -164,34 +197,52 @@ namespace CatchGame
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
-            //update labels
-            timeLabel.Text = $"{time}";
-            scoreLabel.Text = $"Score: {score}";
-
-            //draw ground
-            e.Graphics.FillRectangle(greenBrush, 0, this.Height - groundHeight,
-                this.Width, groundHeight);
-
-            //draw hero
-            e.Graphics.FillRectangle(whiteBrush, hero);
-
-            //draw balls
-            for (int i = 0; i < balls.Count(); i++)
+            if (gameState == "waiting")
             {
-                if (ballColours[i] == "green")
+                timeLabel.Text = "";
+                scoreLabel.Text = "";
+
+                titleLabel.Text = "Catch Game";
+                subtitleLabel.Text = "Press Space to Start or Esc to Exit";
+            }
+            else if (gameState == "running")
+            {
+                //update labels
+                timeLabel.Text = $"{time}";
+                scoreLabel.Text = $"Score: {score}";
+
+                //draw ground
+                e.Graphics.FillRectangle(greenBrush, 0, this.Height - groundHeight,
+                    this.Width, groundHeight);
+
+                //draw hero
+                e.Graphics.FillRectangle(whiteBrush, hero);
+
+                //draw balls
+                for (int i = 0; i < balls.Count(); i++)
                 {
-                    e.Graphics.FillEllipse(greenBrush, balls[i]);
-                }
-                else if (ballColours[i] == "red")
-                {
-                    e.Graphics.FillEllipse(redBrush, balls[i]);
-                }
-                else if (ballColours[i] == "yellow")
-                {
-                    e.Graphics.FillEllipse(yellowBrush, balls[i]);
+                    if (ballColours[i] == "green")
+                    {
+                        e.Graphics.FillEllipse(greenBrush, balls[i]);
+                    }
+                    else if (ballColours[i] == "red")
+                    {
+                        e.Graphics.FillEllipse(redBrush, balls[i]);
+                    }
+                    else if (ballColours[i] == "yellow")
+                    {
+                        e.Graphics.FillEllipse(yellowBrush, balls[i]);
+                    }
                 }
             }
+            else if (gameState == "over")
+            {
+                timeLabel.Text = "";
+                scoreLabel.Text = "";
 
+                titleLabel.Text = "Game Over";
+                subtitleLabel.Text = "Press Space to Start or Esc to Exit";
+            }
         }
     }
 }
