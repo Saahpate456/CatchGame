@@ -16,8 +16,11 @@ namespace CatchGame
         int heroSpeed = 10;
 
         List<Rectangle> balls = new List<Rectangle>();
+        List<int> ballSpeeds = new List<int>();
+        List<string> ballColours = new List<string>();
+
         int ballSize = 10;
-        int ballSpeed = 8;
+        int ballSpeed = 7;
 
         int score = 0;
         int time = 500;
@@ -27,19 +30,37 @@ namespace CatchGame
 
         SolidBrush greenBrush = new SolidBrush(Color.Green);
         SolidBrush whiteBrush = new SolidBrush(Color.White);
+        SolidBrush yellowBrush = new SolidBrush(Color.Yellow);
+        SolidBrush redBrush = new SolidBrush(Color.Red);
 
         Random randGen = new Random();
         int randValue = 0;
 
         int groundHeight = 50;
 
+        string gameState = "waiting";
+
         public Form1()
         {
             InitializeComponent();
-            balls.Add(new Rectangle(3, 0, ballSize, ballSize));
-            balls.Add(new Rectangle(200, 0, ballSize, ballSize));
-            balls.Add(new Rectangle(400, 0, ballSize, ballSize));
+        }
 
+        public void GameSetup()
+        {
+            gameState = "running";
+
+            titleLabel.Text = "";
+            subtitleLabel.Text = "";
+
+            gameLoop.Enabled = true;
+            time = 500;
+            score = 0;
+
+            hero.X = 280;
+
+            balls.Clear();
+            ballSpeeds.Clear();
+            ballColours.Clear();
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -51,6 +72,18 @@ namespace CatchGame
                     break;
                 case Keys.Right:
                     rightDown = true;
+                    break;
+                case Keys.Space:
+                    if (gameState == "waiting" || gameState == "over")
+                    {
+                        GameSetup();
+                    }
+                    break;
+                case Keys.Escape:
+                    if (gameState == "waiting" || gameState == "over")
+                    {
+                        this.Close();
+                    }
                     break;
             }
 
@@ -86,8 +119,77 @@ namespace CatchGame
             //move ball objects
             for (int i = 0; i < balls.Count; i++)
             {
-                int y =  balls[i].Y + ballSpeed;
+                int y = balls[i].Y + ballSpeeds[i];
                 balls[i] = new Rectangle(balls[i].X, y, ballSize, ballSize);
+            }
+
+            //generate a random value
+            randValue = randGen.Next(1, 101);
+
+            //generate new ball if it is time
+            if (randValue < 3)
+            {
+                balls.Add(new Rectangle(randGen.Next(0, this.Width - ballSize), 0, ballSize, ballSize));
+                ballColours.Add("red");
+                ballSpeeds.Add(16);
+            }
+            else if (randValue < 8)
+            {
+                balls.Add(new Rectangle(randGen.Next(0, this.Width - ballSize), 0, ballSize, ballSize));
+                ballColours.Add("yellow");
+                ballSpeeds.Add(12);
+            }
+            else if (randValue < 20)
+            {
+                balls.Add(new Rectangle(randGen.Next(0, this.Width - ballSize), 0, ballSize, ballSize));
+                ballColours.Add("green");
+                ballSpeeds.Add(4);
+            }
+
+            //remove ball if it goes off the screen, (test at y = 400)
+            for (int i = 0; i < balls.Count; i++)
+            {
+                if (balls[i].Y >= this.Height)
+                {
+                    balls.RemoveAt(i);
+                    ballColours.RemoveAt(i);
+                    ballSpeeds.RemoveAt(i);
+                }
+            }
+
+            //check for collision between any ball and player
+            for (int i = 0; i < balls.Count; i++)
+            {
+                if (hero.IntersectsWith(balls[i]))
+                {
+                    if (ballColours[i] == "green")
+                    {
+                        score = score + 5;  // score += 5;
+                    }
+                    else if (ballColours[i] == "yellow")
+                    {
+                        time = time + 50;
+                    }
+                    else if (ballColours[i] == "red")
+                    {
+                        score = score - 10;
+                    }
+
+                    balls.RemoveAt(i);
+                    ballColours.RemoveAt(i);
+                    ballSpeeds.RemoveAt(i);
+                    
+                }
+            }
+
+            //decrease time
+            time--;
+
+            //end game if time runs out
+            if (time <= 0)
+            {
+                gameLoop.Enabled = false;
+                gameState = "over";
             }
 
             Refresh();
@@ -95,23 +197,52 @@ namespace CatchGame
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
-            //update labels
-            timeLabel.Text = $"Time Left: {time}";
-            scoreLabel.Text = $"Score: {score}";
-
-            //draw ground
-            e.Graphics.FillRectangle(greenBrush, 0, this.Height - groundHeight,
-                this.Width, groundHeight);
-
-            //draw hero
-            e.Graphics.FillRectangle(whiteBrush, hero);
-
-            //draw balls
-            for (int i = 0; i < balls.Count(); i++)
+            if (gameState == "waiting")
             {
-                e.Graphics.FillEllipse(greenBrush, balls[i]);
-            }
+                timeLabel.Text = "";
+                scoreLabel.Text = "";
 
+                titleLabel.Text = "Catch Game";
+                subtitleLabel.Text = "Press Space to Start or Esc to Exit";
+            }
+            else if (gameState == "running")
+            {
+                //update labels
+                timeLabel.Text = $"{time}";
+                scoreLabel.Text = $"Score: {score}";
+
+                //draw ground
+                e.Graphics.FillRectangle(greenBrush, 0, this.Height - groundHeight,
+                    this.Width, groundHeight);
+
+                //draw hero
+                e.Graphics.FillRectangle(whiteBrush, hero);
+
+                //draw balls
+                for (int i = 0; i < balls.Count(); i++)
+                {
+                    if (ballColours[i] == "green")
+                    {
+                        e.Graphics.FillEllipse(greenBrush, balls[i]);
+                    }
+                    else if (ballColours[i] == "red")
+                    {
+                        e.Graphics.FillEllipse(redBrush, balls[i]);
+                    }
+                    else if (ballColours[i] == "yellow")
+                    {
+                        e.Graphics.FillEllipse(yellowBrush, balls[i]);
+                    }
+                }
+            }
+            else if (gameState == "over")
+            {
+                timeLabel.Text = "";
+                scoreLabel.Text = "";
+
+                titleLabel.Text = "Game Over";
+                subtitleLabel.Text = "Press Space to Start or Esc to Exit";
+            }
         }
     }
 }
